@@ -1,0 +1,32 @@
+type: object
+properties:
+  buckets:
+    type: object
+    properties:
+      inbound:
+        type: string
+      intermediate:
+        type: string
+      outbound:
+        type: string
+    required:
+      - inbound
+      - intermediate
+      - outbound
+    additionalProperties: false
+  pipelines:
+    type: object
+    patternProperties:
+      pipeline_name:
+        type: array
+        items:
+          type: [object, string]
+  pipeline_triggers:
+    type: array
+    items:
+      type: [object, string]
+required:
+  - buckets
+  - pipelines
+  - pipeline_triggers
+additionalProperties: false

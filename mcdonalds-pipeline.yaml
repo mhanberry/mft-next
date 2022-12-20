@@ -1,0 +1,43 @@
+# Bucket locations for files that are being delivered to vgs,
+# processed, and delivered to the customer respectively
+buckets:
+  inbound: s3://mft-production/tnt5dqrmizm/inbound
+  intermediate: s3://mft-production/tnt5dqrmizm/intermediate
+  outbound: s3://mft-production/tnt5dqrmizm/outbound
+
+# Pipeline definitions
+# Each pipeline step's output is used as input for the next step.
+# The output of the final step is exported to the outbound bucket.
+pipelines:
+  adyen:                                  # First pipeline name
+    - decrypt: dec_key_name.pem           # Pipeline step with one dependency
+    - validate_csv                        # Step with no dependencies
+    - redact: &redact-patterns            # Multiple dependencies + a node anchor
+        - credit_card
+        - ssn
+        - "/password: [^ ]*/"
+    - processing_script: process.py       # Custom python script for processing
+    - validate_redacted: *redact-patterns # Using the previous node anchor
+    - encrypt: enc_key_name.pem
+        
+  moneris:                                # Second pipeline name
+    - decrypt: dec_key_name.pem
+    - unzip
+    - validate_csv
+    - script: process.py
+    - validation_script: validate.py      # Custom python script for validation
+    - zip
+    - encrypt: enc_key_name.pem
+
+# Define when pipelines are run
+pipeline_triggers:
+  - type: on-arrival      # Run pipelines when a new file arrives
+    files:                # The file patterns to watch for
+      - Adyen_*.csv.enc
+    pipelines:            # The pipelines to run
+      - adyen
+  - type: schedule        # Run pipelines periodically
+    cron_expressions:     # When to run the pipelines
+      - 0 0 0 * *
+    pipelines:
+      - moneris
