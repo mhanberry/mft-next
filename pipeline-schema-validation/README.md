@@ -1,4 +1,6 @@
-# pipeline validation
+# pipeline schema validation
+
+Validate that a pipeline definition conforms to the pipeline schema.
 
 ## dependencies
 
